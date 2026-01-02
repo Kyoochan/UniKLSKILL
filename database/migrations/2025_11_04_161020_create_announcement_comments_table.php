@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('announcement_comments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('announcement_id')->constrained('announcements')->onDelete('cascade');
+            $table->foreignId('announcement_id')->constrained('club_announcements')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('comment');
             $table->string('image')->nullable();
