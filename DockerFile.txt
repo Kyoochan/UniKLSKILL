@@ -1,46 +1,53 @@
-FROM php:8.2-apache
+FROM php:8.2-cli
 
-# Disable all MPMs first (IMPORTANT)
-RUN a2dismod mpm_event mpm_worker || true
-
-# Enable only prefork MPM
-RUN a2enmod mpm_prefork rewrite
-
+# ========================
 # System dependencies
+# ========================
 RUN apt-get update && apt-get install -y \
     git unzip curl \
     libpng-dev libonig-dev libxml2-dev libzip-dev \
     nodejs npm zip \
     && rm -rf /var/lib/apt/lists/*
 
+# ========================
 # PHP extensions
+# ========================
 RUN docker-php-ext-install \
     pdo_mysql mbstring exif pcntl bcmath gd zip
 
-WORKDIR /var/www/html
+# ========================
+# Working directory
+# ========================
+WORKDIR /app
 
+# ========================
+# Copy app files
+# ========================
 COPY . .
 
-# Composer
+# ========================
+# Install Composer
+# ========================
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build frontend (Livewire / Vite)
+# ========================
+# Build frontend assets
+# ========================
 RUN npm install && npm run build
 
+# ========================
 # Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+# ========================
 RUN chmod -R 775 storage bootstrap/cache
 
-# Apache public directory
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-
-RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/*.conf \
-    /etc/apache2/apache2.conf \
-    /etc/apache2/conf-available/*.conf
-
+# ========================
+# Expose Railway port
+# ========================
 EXPOSE 8080
 
-CMD ["apache2-foreground"]
+# ========================
+# Start Laravel (NO Apache)
+# ========================
+CMD php -S 0.0.0.0:8080 -t public
