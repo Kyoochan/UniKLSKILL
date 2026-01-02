@@ -2,8 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+
 /* Your custom imports */
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import "tailwindcss";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
 
 /* Optional: theme variables */
 @custom-variant dark (&:where(.dark, .dark *));

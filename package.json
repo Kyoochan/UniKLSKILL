@@ -2,11 +2,11 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev":"vite",
+        "dev": "vite",
         "build": "vite build"
     },
     "dependencies": {
-        "@tailwindcss/vite": "^4.1.11",
+        "@tailwindcss/vite": "^4.1.18",
         "axios": "^1.7.4",
         "concurrently": "^9.0.1",
         "laravel-echo": "^2.2.4",
