@@ -4,7 +4,7 @@ module.exports = {
     './resources/**/*.blade.php',
     './resources/**/*.js',
     './resources/**/*.vue',
-    './vendor/livewire/flux/**/*.blade.php', // include Flux templates if you use their classes
+    './vendor/livewire/flux/**/*.blade.php',
   ],
   theme: {
     extend: {

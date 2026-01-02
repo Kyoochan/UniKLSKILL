@@ -5,12 +5,12 @@ export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: false, // only needed for dev
+            refresh: false,
         }),
     ],
     build: {
-        manifest: true,         // Generate manifest.json for Laravel
-        outDir: 'public/build', // Output directory must match Blade usage
-        emptyOutDir: true,      // Clean old builds
+        manifest: true,          // generate manifest.json
+        outDir: 'public/build',  // must be a folder
+        emptyOutDir: true,       // clean old builds
     },
 });

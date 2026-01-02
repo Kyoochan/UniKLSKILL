@@ -1,20 +1,21 @@
 # ========================
-# Stage 1: Node build (Tailwind + Vite)
+# Stage 1: Build frontend assets with Node
 # ========================
 FROM node:20 AS node-builder
 
+# Set working directory
 WORKDIR /app
 
-# Copy package.json & lock first (better caching)
+# Copy package files first for caching
 COPY package*.json ./
 
 # Install Node dependencies
 RUN npm ci
 
-# Copy the rest of the app
+# Copy rest of the app
 COPY . .
 
-# Build production assets (Tailwind + Vite)
+# Build Tailwind/Vite assets for production
 RUN npm run build
 
 
@@ -23,51 +24,35 @@ RUN npm run build
 # ========================
 FROM php:8.2-cli
 
-# ------------------------
-# System dependencies
-# ------------------------
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git unzip curl libpng-dev libonig-dev libxml2-dev libzip-dev zip \
     && rm -rf /var/lib/apt/lists/*
 
-# ------------------------
-# PHP extensions
-# ------------------------
+# Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# ------------------------
-# Working directory
-# ------------------------
-WORKDIR /app
-
-# ------------------------
 # Copy Laravel app files
-# ------------------------
 COPY . .
 
-# ------------------------
-# Copy compiled assets from Node stage
-# ------------------------
+# Copy compiled frontend assets from Node stage (includes manifest.json!)
 COPY --from=node-builder /app/public/build ./public/build
 
-# ------------------------
-# Install Composer
-# ------------------------
+# Copy Composer binary
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# ------------------------
-# Permissions
-# ------------------------
+# Set correct permissions
 RUN chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# ------------------------
-# Expose port
-# ------------------------
+# Expose Laravel port
 EXPOSE 8080
 
-# ------------------------
-# Start Laravel server
-# ------------------------
-CMD php -S 0.0.0.0:8080 -t public
+# Start Laravel built-in server (clears caches first)
+CMD php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php -S 0.0.0.0:8080 -t public
