@@ -1,16 +1,20 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-ZQzMALxV.css",
+    "file": "assets/app-ByOiMUsh.js",
+    "name": "app",
     "src": "resources/css/app.css",
     "isEntry": true,
-    "names": [
-      "app.css"
+    "css": [
+      "assets/app-ZQzMALxV.css"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-l0sNRNKZ.js",
+    "file": "assets/app-DQQ-aufn.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "resources/css/app.css"
+    ]
   }
 }
