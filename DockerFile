@@ -1,43 +1,72 @@
-FROM php:8.2-apache
+# ========================
+# Stage 0: PHP vendor
+# ========================
+FROM php:8.2-cli AS php-vendor
 
-# Install dependencies
+WORKDIR /app
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libzip-dev zip libonig-dev libxml2-dev unzip git curl
-
-# Enable mod_rewrite
-RUN a2enmod rewrite
-
-# 🔴 FIX: force single Apache MPM
-RUN a2dismod mpm_event || true \
- && a2dismod mpm_worker || true \
- && a2enmod mpm_prefork
+    unzip curl git libzip-dev zip libonig-dev libxml2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install mbstring bcmath xml pdo_mysql zip
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Install Node.js and npm
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+# Copy composer files and install dependencies
+COPY composer.json composer.lock ./
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Set Apache document root
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
- && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# ========================
+# Stage 1: Build frontend assets with Node
+# ========================
+FROM node:20 AS node-builder
 
-WORKDIR /var/www/html
+WORKDIR /app
 
+# Copy vendor from PHP stage so flux.css exists
+COPY --from=php-vendor /app/vendor ./vendor
+
+# Copy package files and install Node dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy rest of the app
 COPY . .
 
-# Install composer
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin --filename=composer
-
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
-
-RUN npm install
+# Build Tailwind/Vite assets for production
 RUN npm run build
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+# ========================
+# Stage 2: PHP production
+# ========================
+FROM php:8.2-cli
 
-EXPOSE 80
-CMD ["apache2-foreground"]
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git unzip curl libpng-dev libonig-dev libxml2-dev libzip-dev zip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+
+# Copy Laravel app files
+COPY . .
+
+# Copy compiled frontend assets from Node stage
+COPY --from=node-builder /app/public/build ./public/build
+
+# Copy vendor from PHP vendor stage
+COPY --from=php-vendor /app/vendor ./vendor
+
+# Set correct permissions
+RUN chmod -R 775 storage bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+EXPOSE 8080
+
+# Start Laravel built-in server
+CMD php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear && php -S 0.0.0.0:8080 -t public
