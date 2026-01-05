@@ -41,6 +41,19 @@
                             <div class="w-8/12 bg-white p-6 rounded-lg border-1">
                                 <h2 class="text-2xl font-bold mb-4 text-center">Staff Account Management</h2>
 
+                                {{-- Status Messages --}}
+@if(session('success'))
+    <div class="mb-4 p-4 bg-green-100 text-green-800 rounded border border-green-300">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-100 text-red-800 rounded border border-red-300">
+        {{ session('error') }}
+    </div>
+@endif
+
                                 {{-- Create Staff Account Form --}}
                                 <form action="{{ route('staffaccount.store') }}" method="POST" class="space-y-4">
                                     @csrf
